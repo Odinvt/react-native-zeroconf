@@ -147,6 +147,9 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
         this.mServiceName = service_name;
         String serviceType = String.format("_%s._%s.", type, protocol);
 
+        if (mNsdManager == null) {
+            mNsdManager = (NsdManager) getReactApplicationContext().getSystemService(Context.NSD_SERVICE);
+        }
 
         unregister(); // unregister any previous service
         NsdServiceInfo serviceInfo  = new NsdServiceInfo();
