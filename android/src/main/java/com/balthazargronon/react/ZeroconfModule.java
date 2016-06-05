@@ -29,6 +29,11 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
     public static final String EVENT_REMOVE = "RNZeroconfRemove";
     public static final String EVENT_RESOLVE = "RNZeroconfResolved";
 
+    public static final String EVENT_REGISTERED = "RNZeroconfRegistered";
+    public static final String EVENT_REGISTER_FAILED = "RNZeroconfRegisterFailed";
+    public static final String EVENT_UNREGISTERED = "RNZeroconfUnregistered";
+    public static final String EVENT_UNREGISTER_FAILED = "RNZeroconfUnregisterFailed";
+
     public static final String KEY_SERVICE_NAME = "name";
     public static final String KEY_SERVICE_FULL_NAME = "fullName";
     public static final String KEY_SERVICE_HOST = "host";
@@ -38,6 +43,9 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
     protected NsdManager mNsdManager;
     protected NsdManager.DiscoveryListener mDiscoveryListener;
     protected NsdManager.ResolveListener mResolveListener;
+    protected NsdManager.RegistrationListener mRegistrationListener;
+
+    public String mServiceName = "DefaultName";
 
     public ZeroconfModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -120,6 +128,34 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
             }
         };
 
+        mRegistrationListener = new NsdManager.RegistrationListener() {
+            @Override
+            public void onServiceRegistered(NsdServiceInfo NsdServiceInfo) {
+                WritableMap service = new WritableNativeMap();
+                service.putString(KEY_SERVICE_NAME, serviceInfo.getServiceName());
+                service.putString(KEY_SERVICE_FULL_NAME, serviceInfo.getHost().getHostName() + serviceInfo.getServiceType());
+                service.putString(KEY_SERVICE_HOST, serviceInfo.getHost().getHostName());
+                service.putInt(KEY_SERVICE_PORT, serviceInfo.getPort());
+                sendEvent(getReactApplicationContext(), EVENT_REGISTERED, service);
+            }
+            @Override
+            public void onRegistrationFailed(NsdServiceInfo arg0, int arg1) {
+                String reg_str = "Service registration failed: " + arg1;
+                sendEvent(getReactApplicationContext(), EVENT_REGISTER_FAILED, reg_str);
+            }
+            @Override
+            public void onServiceUnregistered(NsdServiceInfo arg0) {
+                WritableMap service = new WritableNativeMap();
+                service.putString(KEY_SERVICE_NAME, arg0.getServiceName());
+                sendEvent(getReactApplicationContext(), EVENT_UNREGISTERED, service);
+            }
+            @Override
+            public void onUnregistrationFailed(NsdServiceInfo serviceInfo, int errorCode) {
+                String reg_str = "Service unregistration failed: " + errorCode;
+                sendEvent(getReactApplicationContext(), EVENT_UNREGISTER_FAILED, reg_str);
+            }
+        };
+
         String serviceType = String.format("_%s._%s.", type, protocol);
         mNsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, mDiscoveryListener);
     }
@@ -132,6 +168,32 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
 
         mResolveListener = null;
         mDiscoveryListener = null;
+    }
+
+    @ReactMethod
+    public void register(String type, String protocol, String service_name, int port) {
+        this.mServiceName = service_name;
+        String serviceType = String.format("_%s._%s.", type, protocol);
+
+
+        unregister(); // unregister any previous service
+        NsdServiceInfo serviceInfo  = new NsdServiceInfo();
+        serviceInfo.setPort(port);
+        serviceInfo.setServiceName(this.mServiceName);
+        serviceInfo.setServiceType(serviceType);
+        mNsdManager.registerService(
+                serviceInfo, NsdManager.PROTOCOL_DNS_SD, mRegistrationListener);
+    }
+
+    @ReactMethod
+    public void unregister() {
+        if (mRegistrationListener != null) {
+            try {
+                mNsdManager.unregisterService(mRegistrationListener);
+            } finally {
+            }
+            mRegistrationListener = null;
+        }
     }
 
     protected void sendEvent(ReactContext reactContext,

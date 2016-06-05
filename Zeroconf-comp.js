@@ -9,6 +9,7 @@ function Zeroconf(props){_classCallCheck(this,Zeroconf);var _this=_possibleConst
 props));
 
 _this._services={};
+_this._registeredService={};
 
 _reactNative.DeviceEventEmitter.addListener('RNZeroconfStart',function(){return _this.emit('start');});
 _reactNative.DeviceEventEmitter.addListener('RNZeroconfStop',function(){return _this.emit('stop');});
@@ -38,8 +39,30 @@ if(!service||!service.name){return;}
 
 _this._services[service.name]=service;
 _this.emit('resolved',service);
-_this.emit('update');});return _this;}
+_this.emit('update');});
 
+
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfRegistered',function(service){
+if(!service||!service.name){return;}
+
+_this._registeredService={
+name:service.name,
+fullName:service.fullName,
+host:service.host,
+port:service.port};
+
+
+_this.emit('registered');});
+
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfRegisterFailed',function(err){return _this.emit('register_failed',err);});
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfUnregistered',function(service){
+if(!service||!service.name){return;}
+
+_this._registeredService={};
+
+_this.emit('unregistered');});
+
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfUnregisterFailed',function(err){return _this.emit('unregister_failed',err);});return _this;}
 
 
 
@@ -48,6 +71,13 @@ _this.emit('update');});return _this;}
    */_createClass(Zeroconf,[{key:'getServices',value:function getServices()
 {
 return this._services;}
+
+
+/**
+   * Get registered service
+   */},{key:'getRegisteredService',value:function getRegisteredService()
+{
+return this._registeredService;}
 
 
 /**
@@ -61,7 +91,23 @@ RNZeroconf.scan(type,protocol,domain);}
 
 
 /**
+   * Register new Zeroconf service,
+   * Defaults to _http._tcp. on local domain
+   */},{key:'register',value:function register()
+{var type=arguments.length<=0||arguments[0]===undefined?'http':arguments[0];var protocol=arguments.length<=1||arguments[1]===undefined?'tcp':arguments[1];var service_name=arguments.length<=2||arguments[2]===undefined?'RNDefaultName':arguments[2];var port=arguments.length<=3||arguments[3]===undefined?48500:arguments[3];
+this._registeredService={};
+RNZeroconf.register(type,protocol,service_name,port);}
+
+
+/**
    * Stop current scan if any
    */},{key:'stop',value:function stop()
 {
-RNZeroconf.stop();}}]);return Zeroconf;}(_events.EventEmitter);exports.default=Zeroconf;
+RNZeroconf.stop();}
+
+
+/**
+   * Unregister current registered service
+   */},{key:'unregister',value:function unregister()
+{
+RNZeroconf.unregister();}}]);return Zeroconf;}(_events.EventEmitter);exports.default=Zeroconf;

@@ -9,6 +9,7 @@ export default class Zeroconf extends EventEmitter {
     super(props)
 
     this._services = {}
+    this._registeredService = {}
 
     DeviceEventEmitter.addListener('RNZeroconfStart', () => this.emit('start'))
     DeviceEventEmitter.addListener('RNZeroconfStop', () => this.emit('stop'))
@@ -41,6 +42,28 @@ export default class Zeroconf extends EventEmitter {
       this.emit('update')
     })
 
+    DeviceEventEmitter.addListener('RNZeroconfRegistered', (service) => {
+      if (!service || !service.name) { return }
+
+      this._registeredService = {
+        name : service.name,
+        fullName : service.fullName,
+        host : service.host,
+        port : service.port,
+      }
+
+      this.emit('registered')
+    })
+    DeviceEventEmitter.addListener('RNZeroconfRegisterFailed', err => this.emit('register_failed', err))
+    DeviceEventEmitter.addListener('RNZeroconfUnregistered', (service) => {
+      if (!service || !service.name) { return }
+
+      this._registeredService = {};
+
+      this.emit('unregistered')
+    })
+    DeviceEventEmitter.addListener('RNZeroconfUnregisterFailed', err => this.emit('unregister_failed', err))
+
   }
 
   /**
@@ -48,6 +71,13 @@ export default class Zeroconf extends EventEmitter {
    */
   getServices () {
     return this._services
+  }
+
+  /**
+   * Get registered service
+   */
+  getRegisteredService () {
+    return this._registeredService
   }
 
   /**
@@ -61,10 +91,26 @@ export default class Zeroconf extends EventEmitter {
   }
 
   /**
+   * Register new Zeroconf service,
+   * Defaults to _http._tcp. on local domain
+   */
+  register (type = 'http', protocol = 'tcp', service_name = 'RNDefaultName', port = 48500) {
+    this._registeredService = {}
+    RNZeroconf.register(type, protocol, service_name, port)
+  }
+
+  /**
    * Stop current scan if any
    */
   stop () {
     RNZeroconf.stop()
+  }
+
+  /**
+   * Unregister current registered service
+   */
+  unregister () {
+    RNZeroconf.unregister()
   }
 
 }
