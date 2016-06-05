@@ -128,6 +128,32 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
             }
         };
 
+        String serviceType = String.format("_%s._%s.", type, protocol);
+        mNsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, mDiscoveryListener);
+    }
+
+    @ReactMethod
+    public void stop() {
+        if (mDiscoveryListener != null) {
+            mNsdManager.stopServiceDiscovery(mDiscoveryListener);
+        }
+
+        mResolveListener = null;
+        mDiscoveryListener = null;
+    }
+
+    @ReactMethod
+    public void register(String type, String protocol, String service_name, int port) {
+        this.mServiceName = service_name;
+        String serviceType = String.format("_%s._%s.", type, protocol);
+
+
+        unregister(); // unregister any previous service
+        NsdServiceInfo serviceInfo  = new NsdServiceInfo();
+        serviceInfo.setPort(port);
+        serviceInfo.setServiceName(this.mServiceName);
+        serviceInfo.setServiceType(serviceType);
+
         mRegistrationListener = new NsdManager.RegistrationListener() {
             @Override
             public void onServiceRegistered(NsdServiceInfo serviceInfo) {
@@ -156,31 +182,6 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
             }
         };
 
-        String serviceType = String.format("_%s._%s.", type, protocol);
-        mNsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, mDiscoveryListener);
-    }
-
-    @ReactMethod
-    public void stop() {
-        if (mDiscoveryListener != null) {
-            mNsdManager.stopServiceDiscovery(mDiscoveryListener);
-        }
-
-        mResolveListener = null;
-        mDiscoveryListener = null;
-    }
-
-    @ReactMethod
-    public void register(String type, String protocol, String service_name, int port) {
-        this.mServiceName = service_name;
-        String serviceType = String.format("_%s._%s.", type, protocol);
-
-
-        unregister(); // unregister any previous service
-        NsdServiceInfo serviceInfo  = new NsdServiceInfo();
-        serviceInfo.setPort(port);
-        serviceInfo.setServiceName(this.mServiceName);
-        serviceInfo.setServiceType(serviceType);
         mNsdManager.registerService(
                 serviceInfo, NsdManager.PROTOCOL_DNS_SD, mRegistrationListener);
     }
