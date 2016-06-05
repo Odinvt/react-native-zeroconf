@@ -130,7 +130,7 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
 
         mRegistrationListener = new NsdManager.RegistrationListener() {
             @Override
-            public void onServiceRegistered(NsdServiceInfo NsdServiceInfo) {
+            public void onServiceRegistered(NsdServiceInfo serviceInfo) {
                 WritableMap service = new WritableNativeMap();
                 service.putString(KEY_SERVICE_NAME, serviceInfo.getServiceName());
                 service.putString(KEY_SERVICE_FULL_NAME, serviceInfo.getHost().getHostName() + serviceInfo.getServiceType());
