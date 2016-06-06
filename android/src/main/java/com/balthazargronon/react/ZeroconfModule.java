@@ -162,9 +162,10 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
             public void onServiceRegistered(NsdServiceInfo serviceInfo) {
                 WritableMap service = new WritableNativeMap();
                 service.putString(KEY_SERVICE_NAME, serviceInfo.getServiceName());
-                service.putString(KEY_SERVICE_FULL_NAME, serviceInfo.getHost().getHostName() + serviceInfo.getServiceType());
-                service.putString(KEY_SERVICE_HOST, serviceInfo.getHost().getHostName());
-                service.putInt(KEY_SERVICE_PORT, serviceInfo.getPort());
+                WritableArray addresses = new WritableNativeArray();
+                addresses.pushString(serviceInfo.getHost().getHostAddress());
+
+                service.putArray(KEY_SERVICE_ADDRESSES, addresses);
                 sendEvent(getReactApplicationContext(), EVENT_REGISTERED, service);
             }
             @Override

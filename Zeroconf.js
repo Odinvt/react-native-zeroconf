@@ -46,10 +46,7 @@ export default class Zeroconf extends EventEmitter {
       if (!service || !service.name) { return }
 
       this._registeredService = {
-        name : service.name,
-        fullName : service.fullName,
-        host : service.host,
-        port : service.port,
+        name : service.name
       }
 
       this.emit('registered')

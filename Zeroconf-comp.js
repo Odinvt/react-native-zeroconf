@@ -46,10 +46,7 @@ _reactNative.DeviceEventEmitter.addListener('RNZeroconfRegistered',function(serv
 if(!service||!service.name){return;}
 
 _this._registeredService={
-name:service.name,
-fullName:service.fullName,
-host:service.host,
-port:service.port};
+name:service.name};
 
 
 _this.emit('registered');});
