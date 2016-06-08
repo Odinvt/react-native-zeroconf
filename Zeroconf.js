@@ -3,87 +3,133 @@ import { EventEmitter } from 'events'
 
 const RNZeroconf = NativeModules.RNZeroconf
 
-export default class Zeroconf extends EventEmitter {
+export default class Zeroconf {
 
-  constructor (props) {
-    super(props)
+  static emitter;
+  static _services;
+  static _registeredService;
+  static RNZeroconfStart;
+  static RNZeroconfStop;
+  static RNZeroconfError;
+  static RNZeroconfFound;
+  static RNZeroconfRemove;
+  static RNZeroconfResolved;
+  static RNZeroconfRegistered;
+  static RNZeroconfRegisterFailed;
+  static RNZeroconfUnregistered;
+  static RNZeroconfUnregisterFailed;
 
-    this._services = {}
-    this._registeredService = {}
+  static init () {
 
-    DeviceEventEmitter.addListener('RNZeroconfStart', () => this.emit('start'))
-    DeviceEventEmitter.addListener('RNZeroconfStop', () => this.emit('stop'))
-    DeviceEventEmitter.addListener('RNZeroconfError', err => this.emit('error', err))
+    Zeroconf.emitter = new EventEmitter();
 
-    DeviceEventEmitter.addListener('RNZeroconfFound', service => {
+    Zeroconf._services = {}
+    Zeroconf._registeredService = {}
+
+    if(DeviceEventEmitter.listenerCount('RNZeroconfStart') > 0) {
+      DeviceEventEmitter.removeListener('RNZeroconfStart', Zeroconf.RNZeroconfStart);
+      DeviceEventEmitter.removeListener('RNZeroconfStop', Zeroconf.RNZeroconfStop);
+      DeviceEventEmitter.removeListener('RNZeroconfError', Zeroconf.RNZeroconfError);
+      DeviceEventEmitter.removeListener('RNZeroconfFound', Zeroconf.RNZeroconfFound);
+      DeviceEventEmitter.removeListener('RNZeroconfRemove', Zeroconf.RNZeroconfRemove);
+      DeviceEventEmitter.removeListener('RNZeroconfResolved', Zeroconf.RNZeroconfResolved);
+      DeviceEventEmitter.removeListener('RNZeroconfRegistered', Zeroconf.RNZeroconfRegistered);
+      DeviceEventEmitter.removeListener('RNZeroconfRegisterFailed', Zeroconf.RNZeroconfRegisterFailed);
+      DeviceEventEmitter.removeListener('RNZeroconfUnregistered', Zeroconf.RNZeroconfUnregistered);
+      DeviceEventEmitter.removeListener('RNZeroconfUnregisterFailed', Zeroconf.RNZeroconfUnregisterFailed);
+    }
+
+
+    Zeroconf.RNZeroconfStart = () => Zeroconf.emitter.emit('start');
+    Zeroconf.RNZeroconfStop = () => Zeroconf.emitter.emit('stop');
+    Zeroconf.RNZeroconfError = err => Zeroconf.emitter.emit('error', err);
+
+    Zeroconf.RNZeroconfFound = service => {
       if (!service || !service.name) { return }
       const { name } = service
 
-      this._services[name] = service
-      this.emit('found', name)
-      this.emit('update')
-    })
+      Zeroconf._services[name] = service
+      Zeroconf.emitter.emit('found', name)
+      Zeroconf.emitter.emit('update')
+    };
 
-    DeviceEventEmitter.addListener('RNZeroconfRemove', service => {
+    Zeroconf.RNZeroconfRemove = service => {
       if (!service || !service.name) { return }
       const { name } = service
 
-      delete this._services[name]
+      delete Zeroconf._services[name]
 
-      this.emit('remove', name)
-      this.emit('update')
-    })
+      Zeroconf.emitter.emit('remove', name)
+      Zeroconf.emitter.emit('update')
+    }
 
-    DeviceEventEmitter.addListener('RNZeroconfResolved', service => {
+    Zeroconf.RNZeroconfResolved = service => {
       if (!service || !service.name) { return }
 
-      this._services[service.name] = service
-      this.emit('resolved', service)
-      this.emit('update')
-    })
+      Zeroconf._services[service.name] = service
+      Zeroconf.emitter.emit('resolved', service)
+      Zeroconf.emitter.emit('update')
+    };
 
-    DeviceEventEmitter.addListener('RNZeroconfRegistered', (service) => {
+    Zeroconf.RNZeroconfRegistered = (service) => {
       if (!service || !service.name) { return }
 
-      this._registeredService = {
+      Zeroconf._registeredService = {
         name : service.name
       }
 
-      this.emit('registered')
-    })
-    DeviceEventEmitter.addListener('RNZeroconfRegisterFailed', err => this.emit('register_failed', err))
-    DeviceEventEmitter.addListener('RNZeroconfUnregistered', (service) => {
+      Zeroconf.emitter.emit('registered')
+    };
+
+    Zeroconf.RNZeroconfRegisterFailed = err => Zeroconf.emitter.emit('register_failed', err);
+
+    Zeroconf.RNZeroconfUnregistered = (service) => {
       if (!service || !service.name) { return }
 
-      this._registeredService = {};
+      Zeroconf._registeredService = {};
 
-      this.emit('unregistered')
-    })
-    DeviceEventEmitter.addListener('RNZeroconfUnregisterFailed', err => this.emit('unregister_failed', err))
+      Zeroconf.emitter.emit('unregistered')
+    };
+
+    Zeroconf.RNZeroconfUnregisterFailed = err => Zeroconf.emitter.emit('unregister_failed', err);
+
+
+    if(DeviceEventEmitter.listenerCount('RNZeroconfStart') === 0) {
+      DeviceEventEmitter.addListener('RNZeroconfStart', Zeroconf.RNZeroconfStart);
+      DeviceEventEmitter.addListener('RNZeroconfStop', Zeroconf.RNZeroconfStop);
+      DeviceEventEmitter.addListener('RNZeroconfError', Zeroconf.RNZeroconfError);
+      DeviceEventEmitter.addListener('RNZeroconfFound', Zeroconf.RNZeroconfFound);
+      DeviceEventEmitter.addListener('RNZeroconfRemove', Zeroconf.RNZeroconfRemove);
+      DeviceEventEmitter.addListener('RNZeroconfResolved', Zeroconf.RNZeroconfResolved);
+      DeviceEventEmitter.addListener('RNZeroconfRegistered', Zeroconf.RNZeroconfRegistered);
+      DeviceEventEmitter.addListener('RNZeroconfRegisterFailed', Zeroconf.RNZeroconfRegisterFailed);
+      DeviceEventEmitter.addListener('RNZeroconfUnregistered', Zeroconf.RNZeroconfUnregistered);
+      DeviceEventEmitter.addListener('RNZeroconfUnregisterFailed', Zeroconf.RNZeroconfUnregisterFailed);
+    }
 
   }
 
   /**
    * Get all the services already resolved
    */
-  getServices () {
-    return this._services
+  static getServices () {
+    return Zeroconf._services
   }
 
   /**
    * Get registered service
    */
-  getRegisteredService () {
-    return this._registeredService
+  static getRegisteredService () {
+    return Zeroconf._registeredService
   }
 
   /**
    * Scan for Zeroconf services,
    * Defaults to _http._tcp. on local domain
    */
-  scan (type = 'http', protocol = 'tcp', domain = 'local.') {
-    this._services = {}
-    this.emit('update')
+  static scan (type = 'http', protocol = 'tcp', domain = 'local.') {
+    Zeroconf._services = {}
+    Zeroconf.emitter.emit('update')
     RNZeroconf.scan(type, protocol, domain)
   }
 
@@ -91,22 +137,22 @@ export default class Zeroconf extends EventEmitter {
    * Register new Zeroconf service,
    * Defaults to _http._tcp. on local domain
    */
-  register (type = 'http', protocol = 'tcp', service_name = 'RNDefaultName', port = 48500) {
-    this._registeredService = {}
+  static register (type = 'http', protocol = 'tcp', service_name = 'RNDefaultName', port = 48500) {
+    Zeroconf._registeredService = {}
     RNZeroconf.register(type, protocol, service_name, port)
   }
 
   /**
    * Stop current scan if any
    */
-  stop () {
+  static stop () {
     RNZeroconf.stop()
   }
 
   /**
    * Unregister current registered service
    */
-  unregister () {
+  static unregister () {
     RNZeroconf.unregister()
   }
 
