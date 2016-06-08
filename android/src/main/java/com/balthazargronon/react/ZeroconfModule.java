@@ -3,6 +3,7 @@ package com.balthazargronon.react;
 import android.content.Context;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
+import android.util.Log;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
@@ -162,10 +163,6 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
             public void onServiceRegistered(NsdServiceInfo serviceInfo) {
                 WritableMap service = new WritableNativeMap();
                 service.putString(KEY_SERVICE_NAME, serviceInfo.getServiceName());
-                WritableArray addresses = new WritableNativeArray();
-                addresses.pushString(serviceInfo.getHost().getHostAddress());
-
-                service.putArray(KEY_SERVICE_ADDRESSES, addresses);
                 sendEvent(getReactApplicationContext(), EVENT_REGISTERED, service);
             }
             @Override
@@ -207,5 +204,6 @@ public class ZeroconfModule extends ReactContextBaseJavaModule {
         reactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, params);
+        Log.e("DEBUG : ", "Event SENT : " + eventName);
     }
 }

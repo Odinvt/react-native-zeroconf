@@ -1,110 +1,94 @@
 import { NativeModules, DeviceEventEmitter } from 'react-native'
 import { EventEmitter } from 'events'
 
+EventEmitter.defaultMaxListeners = Infinity;
+
 const RNZeroconf = NativeModules.RNZeroconf
+RNZeroconf.DeviceEventEmitter = DeviceEventEmitter;
 
 export default class Zeroconf {
 
   static emitter;
+  static listenerCount = 0;
   static _services;
   static _registeredService;
-  static RNZeroconfStart;
-  static RNZeroconfStop;
-  static RNZeroconfError;
-  static RNZeroconfFound;
-  static RNZeroconfRemove;
-  static RNZeroconfResolved;
-  static RNZeroconfRegistered;
-  static RNZeroconfRegisterFailed;
-  static RNZeroconfUnregistered;
-  static RNZeroconfUnregisterFailed;
 
   static init () {
 
     Zeroconf.emitter = new EventEmitter();
+    Zeroconf.emitter.setMaxListeners(Infinity)
 
     Zeroconf._services = {}
     Zeroconf._registeredService = {}
 
-    if(DeviceEventEmitter.listenerCount('RNZeroconfStart') > 0) {
-      DeviceEventEmitter.removeListener('RNZeroconfStart', Zeroconf.RNZeroconfStart);
-      DeviceEventEmitter.removeListener('RNZeroconfStop', Zeroconf.RNZeroconfStop);
-      DeviceEventEmitter.removeListener('RNZeroconfError', Zeroconf.RNZeroconfError);
-      DeviceEventEmitter.removeListener('RNZeroconfFound', Zeroconf.RNZeroconfFound);
-      DeviceEventEmitter.removeListener('RNZeroconfRemove', Zeroconf.RNZeroconfRemove);
-      DeviceEventEmitter.removeListener('RNZeroconfResolved', Zeroconf.RNZeroconfResolved);
-      DeviceEventEmitter.removeListener('RNZeroconfRegistered', Zeroconf.RNZeroconfRegistered);
-      DeviceEventEmitter.removeListener('RNZeroconfRegisterFailed', Zeroconf.RNZeroconfRegisterFailed);
-      DeviceEventEmitter.removeListener('RNZeroconfUnregistered', Zeroconf.RNZeroconfUnregistered);
-      DeviceEventEmitter.removeListener('RNZeroconfUnregisterFailed', Zeroconf.RNZeroconfUnregisterFailed);
+
+    if(Zeroconf.listenerCount && Zeroconf.listenerCount > 0) {
+      DeviceEventEmitter.removeAllListeners('RNZeroconfStart');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfStop');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfError');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfFound');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfRemove');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfResolved');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfRegistered');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfRegisterFailed');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfUnregistered');
+      DeviceEventEmitter.removeAllListeners('RNZeroconfUnregisterFailed');
+
+      Zeroconf.listenerCount = 0;
     }
 
+    if(Zeroconf.listenerCount === 0) {
 
-    Zeroconf.RNZeroconfStart = () => Zeroconf.emitter.emit('start');
-    Zeroconf.RNZeroconfStop = () => Zeroconf.emitter.emit('stop');
-    Zeroconf.RNZeroconfError = err => Zeroconf.emitter.emit('error', err);
+      DeviceEventEmitter.addListener('RNZeroconfStart', () => {
+        Zeroconf.emitter.emit('start')
+      });
+      DeviceEventEmitter.addListener('RNZeroconfStop', () => Zeroconf.emitter.emit('stop'));
+      DeviceEventEmitter.addListener('RNZeroconfError', err => Zeroconf.emitter.emit('error', err));
+      DeviceEventEmitter.addListener('RNZeroconfFound', service => {
+        if (!service || !service.name) { return }
+        const { name } = service
 
-    Zeroconf.RNZeroconfFound = service => {
-      if (!service || !service.name) { return }
-      const { name } = service
+        Zeroconf._services[name] = service
+        Zeroconf.emitter.emit('found', name)
+        Zeroconf.emitter.emit('update')
+      });
+      DeviceEventEmitter.addListener('RNZeroconfRemove', service => {
+        if (!service || !service.name) { return }
+        const { name } = service
 
-      Zeroconf._services[name] = service
-      Zeroconf.emitter.emit('found', name)
-      Zeroconf.emitter.emit('update')
-    };
+        delete Zeroconf._services[name]
 
-    Zeroconf.RNZeroconfRemove = service => {
-      if (!service || !service.name) { return }
-      const { name } = service
+        Zeroconf.emitter.emit('remove', name)
+        Zeroconf.emitter.emit('update')
+      });
+      DeviceEventEmitter.addListener('RNZeroconfResolved', service => {
+        if (!service || !service.name) { return }
 
-      delete Zeroconf._services[name]
+        Zeroconf._services[service.name] = service
+        Zeroconf.emitter.emit('resolved', service)
+        Zeroconf.emitter.emit('update')
+      });
+      DeviceEventEmitter.addListener('RNZeroconfRegistered', (service) => {
+        if (!service || !service.name) { return }
 
-      Zeroconf.emitter.emit('remove', name)
-      Zeroconf.emitter.emit('update')
-    }
+        Zeroconf._registeredService = {
+          name : service.name
+        }
 
-    Zeroconf.RNZeroconfResolved = service => {
-      if (!service || !service.name) { return }
+        Zeroconf.emitter.emit('registered')
+      });
+      DeviceEventEmitter.addListener('RNZeroconfRegisterFailed', err => Zeroconf.emitter.emit('register_failed', err));
 
-      Zeroconf._services[service.name] = service
-      Zeroconf.emitter.emit('resolved', service)
-      Zeroconf.emitter.emit('update')
-    };
+      DeviceEventEmitter.addListener('RNZeroconfUnregistered', (service) => {
+        if (!service || !service.name) { return }
 
-    Zeroconf.RNZeroconfRegistered = (service) => {
-      if (!service || !service.name) { return }
+        Zeroconf._registeredService = {};
 
-      Zeroconf._registeredService = {
-        name : service.name
-      }
+        Zeroconf.emitter.emit('unregistered')
+      });
+      DeviceEventEmitter.addListener('RNZeroconfUnregisterFailed', err => Zeroconf.emitter.emit('unregister_failed', err));
 
-      Zeroconf.emitter.emit('registered')
-    };
-
-    Zeroconf.RNZeroconfRegisterFailed = err => Zeroconf.emitter.emit('register_failed', err);
-
-    Zeroconf.RNZeroconfUnregistered = (service) => {
-      if (!service || !service.name) { return }
-
-      Zeroconf._registeredService = {};
-
-      Zeroconf.emitter.emit('unregistered')
-    };
-
-    Zeroconf.RNZeroconfUnregisterFailed = err => Zeroconf.emitter.emit('unregister_failed', err);
-
-
-    if(DeviceEventEmitter.listenerCount('RNZeroconfStart') === 0) {
-      DeviceEventEmitter.addListener('RNZeroconfStart', Zeroconf.RNZeroconfStart);
-      DeviceEventEmitter.addListener('RNZeroconfStop', Zeroconf.RNZeroconfStop);
-      DeviceEventEmitter.addListener('RNZeroconfError', Zeroconf.RNZeroconfError);
-      DeviceEventEmitter.addListener('RNZeroconfFound', Zeroconf.RNZeroconfFound);
-      DeviceEventEmitter.addListener('RNZeroconfRemove', Zeroconf.RNZeroconfRemove);
-      DeviceEventEmitter.addListener('RNZeroconfResolved', Zeroconf.RNZeroconfResolved);
-      DeviceEventEmitter.addListener('RNZeroconfRegistered', Zeroconf.RNZeroconfRegistered);
-      DeviceEventEmitter.addListener('RNZeroconfRegisterFailed', Zeroconf.RNZeroconfRegisterFailed);
-      DeviceEventEmitter.addListener('RNZeroconfUnregistered', Zeroconf.RNZeroconfUnregistered);
-      DeviceEventEmitter.addListener('RNZeroconfUnregisterFailed', Zeroconf.RNZeroconfUnregisterFailed);
+      Zeroconf.listenerCount = 1;
     }
 
   }

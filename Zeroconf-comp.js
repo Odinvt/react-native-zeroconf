@@ -1,18 +1,12 @@
 Object.defineProperty(exports,"__esModule",{value:true});var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value" in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor);}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor;};}();var _reactNative=require('react-native');
 var _events=require('events');function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function");}}
 
-var RNZeroconf=_reactNative.NativeModules.RNZeroconf;var 
+_events.EventEmitter.defaultMaxListeners=Infinity;
+
+var RNZeroconf=_reactNative.NativeModules.RNZeroconf;
+RNZeroconf.DeviceEventEmitter=_reactNative.DeviceEventEmitter;var 
 
 Zeroconf=function(){function Zeroconf(){_classCallCheck(this,Zeroconf);}_createClass(Zeroconf,null,[{key:'init',value:function init()
-
-
-
-
-
-
-
-
-
 
 
 
@@ -22,89 +16,79 @@ Zeroconf=function(){function Zeroconf(){_classCallCheck(this,Zeroconf);}_createC
 {
 
 Zeroconf.emitter=new _events.EventEmitter();
+Zeroconf.emitter.setMaxListeners(Infinity);
 
 Zeroconf._services={};
 Zeroconf._registeredService={};
 
-if(_reactNative.DeviceEventEmitter.listenerCount('RNZeroconfStart')>0){
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfStart',Zeroconf.RNZeroconfStart);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfStop',Zeroconf.RNZeroconfStop);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfError',Zeroconf.RNZeroconfError);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfFound',Zeroconf.RNZeroconfFound);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfRemove',Zeroconf.RNZeroconfRemove);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfResolved',Zeroconf.RNZeroconfResolved);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfRegistered',Zeroconf.RNZeroconfRegistered);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfRegisterFailed',Zeroconf.RNZeroconfRegisterFailed);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfUnregistered',Zeroconf.RNZeroconfUnregistered);
-_reactNative.DeviceEventEmitter.removeListener('RNZeroconfUnregisterFailed',Zeroconf.RNZeroconfUnregisterFailed);}
+
+if(Zeroconf.listenerCount&&Zeroconf.listenerCount>0){
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfStart');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfStop');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfError');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfFound');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfRemove');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfResolved');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfRegistered');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfRegisterFailed');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfUnregistered');
+_reactNative.DeviceEventEmitter.removeAllListeners('RNZeroconfUnregisterFailed');
+
+Zeroconf.listenerCount=0;}
 
 
+if(Zeroconf.listenerCount===0){
 
-Zeroconf.RNZeroconfStart=function(){return Zeroconf.emitter.emit('start');};
-Zeroconf.RNZeroconfStop=function(){return Zeroconf.emitter.emit('stop');};
-Zeroconf.RNZeroconfError=function(err){return Zeroconf.emitter.emit('error',err);};
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfStart',function(){
+Zeroconf.emitter.emit('start');});
 
-Zeroconf.RNZeroconfFound=function(service){
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfStop',function(){return Zeroconf.emitter.emit('stop');});
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfError',function(err){return Zeroconf.emitter.emit('error',err);});
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfFound',function(service){
 if(!service||!service.name){return;}var 
 name=service.name;
 
 Zeroconf._services[name]=service;
 Zeroconf.emitter.emit('found',name);
-Zeroconf.emitter.emit('update');};
+Zeroconf.emitter.emit('update');});
 
-
-Zeroconf.RNZeroconfRemove=function(service){
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfRemove',function(service){
 if(!service||!service.name){return;}var 
 name=service.name;
 
 delete Zeroconf._services[name];
 
 Zeroconf.emitter.emit('remove',name);
-Zeroconf.emitter.emit('update');};
+Zeroconf.emitter.emit('update');});
 
-
-Zeroconf.RNZeroconfResolved=function(service){
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfResolved',function(service){
 if(!service||!service.name){return;}
 
 Zeroconf._services[service.name]=service;
 Zeroconf.emitter.emit('resolved',service);
-Zeroconf.emitter.emit('update');};
+Zeroconf.emitter.emit('update');});
 
-
-Zeroconf.RNZeroconfRegistered=function(service){
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfRegistered',function(service){
 if(!service||!service.name){return;}
 
 Zeroconf._registeredService={
 name:service.name};
 
 
-Zeroconf.emitter.emit('registered');};
+Zeroconf.emitter.emit('registered');});
 
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfRegisterFailed',function(err){return Zeroconf.emitter.emit('register_failed',err);});
 
-Zeroconf.RNZeroconfRegisterFailed=function(err){return Zeroconf.emitter.emit('register_failed',err);};
-
-Zeroconf.RNZeroconfUnregistered=function(service){
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfUnregistered',function(service){
 if(!service||!service.name){return;}
 
 Zeroconf._registeredService={};
 
-Zeroconf.emitter.emit('unregistered');};
+Zeroconf.emitter.emit('unregistered');});
 
+_reactNative.DeviceEventEmitter.addListener('RNZeroconfUnregisterFailed',function(err){return Zeroconf.emitter.emit('unregister_failed',err);});
 
-Zeroconf.RNZeroconfUnregisterFailed=function(err){return Zeroconf.emitter.emit('unregister_failed',err);};
-
-
-if(_reactNative.DeviceEventEmitter.listenerCount('RNZeroconfStart')===0){
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfStart',Zeroconf.RNZeroconfStart);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfStop',Zeroconf.RNZeroconfStop);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfError',Zeroconf.RNZeroconfError);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfFound',Zeroconf.RNZeroconfFound);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfRemove',Zeroconf.RNZeroconfRemove);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfResolved',Zeroconf.RNZeroconfResolved);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfRegistered',Zeroconf.RNZeroconfRegistered);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfRegisterFailed',Zeroconf.RNZeroconfRegisterFailed);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfUnregistered',Zeroconf.RNZeroconfUnregistered);
-_reactNative.DeviceEventEmitter.addListener('RNZeroconfUnregisterFailed',Zeroconf.RNZeroconfUnregisterFailed);}}
+Zeroconf.listenerCount=1;}}
 
 
 
@@ -153,4 +137,4 @@ RNZeroconf.stop();}
    * Unregister current registered service
    */},{key:'unregister',value:function unregister()
 {
-RNZeroconf.unregister();}}]);return Zeroconf;}();exports.default=Zeroconf;
+RNZeroconf.unregister();}}]);return Zeroconf;}();Zeroconf.listenerCount=0;exports.default=Zeroconf;
